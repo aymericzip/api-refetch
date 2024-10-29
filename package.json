@@ -1,0 +1,82 @@
+{
+  "name": "api-refetch",
+  "version": "1.0.0",
+  "description": "Alternative to SWC or react-query. Hook that store your API calls and provide states as isLoading, isFetched, data, error. Allow to instantly fetch the API when the hook is mounted. Provide retry and revalidation options.",
+  "scripts": {
+    "build": "pnpm build:package & pnpm build:types",
+    "build:package": "tsup",
+    "build:types": "tsc --project ./tsconfig.types.json && tsc-alias --project ./tsconfig.types.json",
+    "clean": "rimraf ./dist"
+  },
+  "private": false,
+  "keywords": [
+    "fetch",
+    "api",
+    "store",
+    "zustand",
+    "revalidate",
+    "loading",
+    "data",
+    "autoFetch",
+    "retry",
+    "revalidate",
+    "async"
+  ],
+  "license": "ISC",
+  "homepage": "https://github.com/aymericzip/api-refetch",
+  "bugs": {
+    "url": "https://github.com/aymericzip/api-refetch/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/aymericzip/api-refetch.git"
+  },
+  "author": {
+    "name": "Aymeric PINEAU",
+    "url": "https://github.com/aymericzip"
+  },
+  "contributors": [
+    {
+      "name": "Aymeric Pineau",
+      "email": "ay.pineau@gmail.com",
+      "url": "https://github.com/aymericzip"
+    }
+  ],
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "require": "./dist/cjs/index.cjs",
+      "import": "./dist/esm/index.mjs"
+    },
+    "./package.json": "./package.json"
+  },
+  "main": "dist/cjs/index.cjs",
+  "types": "dist/types/index.d.ts",
+  "module": "dist/esm/index.mjs",
+  "typesVersions": {
+    "*": {
+      "package.json": [
+        "./package.json"
+      ]
+    }
+  },
+  "files": [
+    "./dist",
+    "./package.json"
+  ],
+  "devDependencies": {
+    "@types/node": "^22.8.1",
+    "esbuild-fix-imports-plugin": "^1.0.5",
+    "tsc-alias": "^1.8.10",
+    "tsup": "^8.3.5",
+    "typescript": "^5.6.3",
+    "zustand": "^4.5.2"
+  },
+  "peerDependencies": {
+    "react": "^18.3.1"
+  },
+  "bug": {
+    "url": "https://github.com/aymericzip/api-refetch/issues"
+  }
+}
