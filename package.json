@@ -69,6 +69,7 @@
   ],
   "devDependencies": {
     "@types/node": "^22.8.1",
+    "@types/react": "^18.3.12",
     "esbuild-fix-imports-plugin": "^1.0.6",
     "tsc-alias": "^1.8.10",
     "tsup": "^8.3.5",
