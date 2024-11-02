@@ -62,10 +62,17 @@ const UserDetails = ({ userId }) => {
     "userDetails",
     () => fetchUserData(userId),
     {
-      cache: true, // cache the API call result
+      cache: true, // cache the API call result using zustand
+      store: true, // store the API call result in the session storage
       revalidateTime: 60 * 1000, // revalidate every 1 minute
       retryLimit: 3, // retry 3 times if the API call fails
+      retryTime: 10 * 1000, // wait 10 seconds before retrying
       autoFetch: true, // auto fetch the API call when the component is mounted
+      revalidation: true, // enable revalidation
+      revalidateTime: 5 * 60 * 1000, // revalidate every 5 minutes
+      isInvalidated: false, // determine if the data is invalidated and should be refetched
+      invalidateQueries: ["user"], // invalidate other queries when the data is updated
+      updateQueries: ["user"], // set other queries data when the data is updated
       onSuccess: (data) => console.log("User data fetched successfully:", data),
       onError: (error) => console.error("Error fetching user data:", error),
     }
