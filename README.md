@@ -6,8 +6,9 @@
 
 - **Easy to use**: Integrate asynchronous data fetching into your components with minimal boilerplate.
 - **State management**: Automatically manages loading, error, success, and fetched states.
-- **Retry Logic**: Configurable retry mechanism for failed requests.
+- **Storage**: Built-in support for storing and retrieving data in session storage.
 - **Caching**: Optional caching of requests to improve performance and reduce server load.
+- **Retry Logic**: Configurable retry mechanism for failed requests.
 - **Revalidation**: Supports automatic revalidation of data to keep the UI up to date.
 - **Customizable**: Extensive options to tailor the behavior of the hook to your needs.
 
@@ -87,6 +88,8 @@ const UserDetails = ({ userId }) => {
 While React Query and SWR are excellent tools for data fetching and caching in React applications, `api-refetch` offers unique advantages that may make it more suitable for certain use cases:
 
 - **Zustand-based Storage**: `api-refetch` utilizes Zustand for state management, which avoids the need for a context provider or wrapper around your application, simplifying integration and reducing boilerplate.
+
+- **Preset data using Session Storage**: `api-refetch` provides a built-in mechanism for storing and retrieving data in session storage, allowing you to easily cache API responses and reuse them across your application. It can be use to accelerate the loading of our data before automatic revalidation.
 
 - **No Wrapper Store Provider Required**: Unlike other libraries that require you to wrap your application with a provider for state management, `api-refetch` operates without such requirements, making it easier to integrate with existing projects or for those seeking less complexity.
 
