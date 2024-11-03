@@ -10,6 +10,7 @@
 - **Caching**: Optional caching of requests to improve performance and reduce server load.
 - **Retry Logic**: Configurable retry mechanism for failed requests.
 - **Revalidation**: Supports automatic revalidation of data to keep the UI up to date.
+- **Parallel Component Mount Fetching**: api-refetch provides a mechanism to handle parallel component mount fetching, ensuring that only one fetch request is initiated at a time, regardless of the number of components mounting simultaneously.
 - **Customizable**: Extensive options to tailor the behavior of the hook to your needs.
 
 ## Installation
