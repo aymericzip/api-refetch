@@ -63,6 +63,7 @@ const UserDetails = ({ userId }) => {
     "userDetails",
     () => fetchUserData(userId),
     {
+      enable: true, // enable the hook
       cache: true, // cache the API call result using zustand
       store: true, // store the API call result in the session storage
       revalidateTime: 60 * 1000, // revalidate every 1 minute
