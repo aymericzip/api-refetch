@@ -29,6 +29,7 @@ type UseAsyncOptions<T extends (...args: any[]) => Promise<any>> = {
   retryTime?: number; // Time in milliseconds for retrying the data
   cache?: boolean; // Cache the result of the function using zustand
   store?: boolean; // Store the result of the function in session storage
+  enable?: boolean; // Enable the hook
   autoFetch?: boolean; // Automatically fetch the data when the hook is mounted
   revalidation?: boolean; // Enable revalidation
   revalidateTime?: number; // Time in milliseconds for revalidating the data
@@ -42,6 +43,7 @@ type UseAsyncOptions<T extends (...args: any[]) => Promise<any>> = {
 // Default values for the hook's options
 const DEFAULT_CACHE_ENABLED = false;
 const DEFAULT_STORE_ENABLED = false;
+const DEFAULT_ENABLED = true;
 const DEFAULT_AUTO_FETCH = false;
 const DEFAULT_RETRY_LIMIT = 1;
 const DEFAULT_REVALIDATION_ENABLED = false;
@@ -67,6 +69,7 @@ export type UseAsyncResult<
  * @returns {UseAsyncResult<U, T>} The states and controls related to the managed async function. Includes states like isLoading, isSuccess, and provides control methods like revalidate and setData.
  *
  * @typedef {Object} UseAsyncOptions
+ * @property {boolean} [enable=true] - Enable the hook.
  * @property {number} [retryTime=300000] - Time in milliseconds for retrying the data after an error occurs.
  * @property {number} [retryLimit=1] - The number of times the hook should retry the asynchronous function on failure before giving up.
  * @property {boolean} [revalidation=false] - Enable revalidation.
@@ -131,6 +134,7 @@ export const useAsync = <
     setIsTriggered,
     setData,
     setIsInvalidated,
+    setIsEnabled,
     incrementRetryCount,
     resetRetryCount,
   } = useAsyncStateStore((state) => ({
@@ -140,6 +144,7 @@ export const useAsync = <
     setIsSuccess: state.setIsSuccess,
     setIsTriggered: state.setIsTriggered,
     setIsInvalidated: state.setIsInvalidated,
+    setIsEnabled: state.setIsEnabled,
     setData: state.setData,
     incrementRetryCount: state.incrementRetryCount,
     resetRetryCount: state.resetRetryCount,
@@ -158,13 +163,13 @@ export const useAsync = <
     isFetched,
     fetchedDateTime,
     isLoading,
+    isEnabled: isEnabledState,
     error,
     isSuccess,
     isInvalidated,
     isTriggered,
     data,
     retryCount: errorCount,
-    isDisabled,
   } = useAsyncStateStore((state) => state.getStates(keyWithArgs));
 
   // Resolving optional parameters with default values
@@ -173,6 +178,7 @@ export const useAsync = <
   const retryTime = options?.retryTime ?? DEFAULT_RETRY_TIME;
   const cacheEnabled = options?.cache ?? DEFAULT_CACHE_ENABLED;
   const storeEnabled = options?.store ?? DEFAULT_STORE_ENABLED;
+  const enabled = options?.enable ?? DEFAULT_ENABLED;
   const revalidationEnabled =
     options?.revalidation ?? DEFAULT_REVALIDATION_ENABLED;
   const revalidateTime = options?.revalidateTime ?? DEFAULT_REVALIDATE_TIME;
@@ -181,6 +187,9 @@ export const useAsync = <
   const invalidateQueries = options?.invalidateQueries ?? [];
   const onSuccess = options?.onSuccess;
   const onError = options?.onError;
+
+  const isEnabled = isEnabledState || enabled;
+  const isDisabled = !isEnabled;
 
   // The core fetching function, designed to be called directly or automatically based on configuration
   const fetch: T = useCallback<T>(
@@ -274,6 +283,10 @@ export const useAsync = <
     [isDisabled, storedArgsRef]
   );
 
+  useEffect(() => {
+    setIsEnabled(keyWithArgs, enabled);
+  }, [enabled]);
+
   // Fetching triggering system
   useEffect(() => {
     // Triggering system allows to fetch the data only once if the hook is mounted multiple times
@@ -287,6 +300,7 @@ export const useAsync = <
   // Auto-fetch data on hook mount if autoFetch is true
   useEffect(() => {
     if (!autoFetch) return;
+    if (isDisabled) return;
     if (isFetched || isDisabled || isLoading) return;
     if (isTriggered) return;
 
@@ -297,14 +311,11 @@ export const useAsync = <
   useEffect(() => {
     const isRetryEnabled = errorCount > 0 && retryLimit > 0;
     const isRetryLimitReached = errorCount >= retryLimit;
-    if (
-      !(cacheEnabled || storeEnabled) ||
-      !isRetryEnabled ||
-      isRetryLimitReached ||
-      isSuccess ||
-      isLoading
-    )
-      return;
+    if (isDisabled) return;
+    if (!(cacheEnabled || storeEnabled)) return;
+    if (!isRetryEnabled || isRetryLimitReached) return;
+    if (isSuccess) return;
+    if (isLoading) return;
 
     const timeOut = setTimeout(() => {
       if (isRetryEnabled && !isRetryLimitReached && !isSuccess) {
@@ -317,16 +328,10 @@ export const useAsync = <
 
   // Handle periodic revalidation if caching is enabled
   useEffect(() => {
-    if (
-      isDisabled ||
-      isLoading ||
-      !(cacheEnabled || storeEnabled) ||
-      !revalidationEnabled ||
-      revalidateTime <= 0 ||
-      !isSuccess ||
-      !fetchedDateTime
-    )
-      return;
+    if (isDisabled) return;
+    if (isLoading || !(cacheEnabled || storeEnabled)) return;
+    if (!revalidationEnabled || revalidateTime <= 0 || !isSuccess) return;
+    if (!fetchedDateTime) return;
 
     const interval = setInterval(() => {
       const now = new Date().getTime();
@@ -349,7 +354,11 @@ export const useAsync = <
 
   // Load data from session storage if storeEnabled is true
   useEffect(() => {
-    if (!storeEnabled || isInvalidated || isFetched) return;
+    if (isDisabled) return;
+    if (!storeEnabled) return;
+    if (isInvalidated) return;
+    if (isFetched) return;
+    if (isDisabled) return;
 
     const storedData = sessionStorage.getItem(keyWithArgs);
 
@@ -381,6 +390,7 @@ export const useAsync = <
     data,
     retryCount: errorCount,
     isDisabled,
+    isEnabled,
     [key]: execute,
     revalidate,
     setData: setDataMemo,
