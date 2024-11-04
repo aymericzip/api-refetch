@@ -1,6 +1,6 @@
 {
   "name": "api-refetch",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "description": "Alternative to SWR or react-query. Hook that store your API calls and provide states as isLoading, isFetched, data, error. Allow to instantly fetch the API when the hook is mounted. Provide retry and revalidation options.",
   "scripts": {
     "build": "pnpm build:package & pnpm build:types",

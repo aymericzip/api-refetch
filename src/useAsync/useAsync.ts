@@ -69,7 +69,6 @@ export type UseAsyncResult<
  * @returns {UseAsyncResult<U, T>} The states and controls related to the managed async function. Includes states like isLoading, isSuccess, and provides control methods like revalidate and setData.
  *
  * @typedef {Object} UseAsyncOptions
- * @property {boolean} [enable=true] - Enable the hook.
  * @property {number} [retryTime=300000] - Time in milliseconds for retrying the data after an error occurs.
  * @property {number} [retryLimit=1] - The number of times the hook should retry the asynchronous function on failure before giving up.
  * @property {boolean} [revalidation=false] - Enable revalidation.
@@ -100,20 +99,11 @@ export type UseAsyncResult<
  *     error,
  *     revalidate,
  *   } = useAsync('userDetails', fetchUserData, {
- *    enable: true, // enable the hook
- *    cache: true, // cache the API call result using zustand
- *    store: true, // store the API call result in the session storage
- *    revalidateTime: 60 * 1000, // revalidate every 1 minute
- *    retryLimit: 3, // retry 3 times if the API call fails
- *    retryTime: 10 * 1000, // wait 10 seconds before retrying
- *    autoFetch: true, // auto fetch the API call when the component is mounted
- *    revalidation: true, // enable revalidation
- *    revalidateTime: 5 * 60 * 1000, // revalidate every 5 minutes
- *    isInvalidated: false, // determine if the data is invalidated and should be refetched
- *    invalidateQueries: ["user"], // invalidate other queries when the data is updated
- *    updateQueries: ["user"], // set other queries data when the data is updated
- *    onSuccess: (data) => console.log("User data fetched successfully:", data),
- *    onError: (error) => console.error("Error fetching user data:", error),
+ *     cache: true,
+ *     revalidateTime: 60000, // 1 minute
+ *     autoFetch: true,
+ *     onSuccess: (data) => console.log('User data fetched successfully:', data),
+ *     onError: (error) => console.error('Error fetching user data:', error),
  *   });
  *
  *   if (isLoading) return <div>Loading...</div>;
@@ -282,6 +272,8 @@ export const useAsync = <
   const revalidate: T = useCallback<T>(
     (async (...args) => {
       if (isDisabled) return;
+      if (isSuccess) return;
+      if (isLoading) return;
 
       if (args) {
         storedArgsRef.current = args;
@@ -289,8 +281,30 @@ export const useAsync = <
 
       await fetch(...storedArgsRef.current);
     }) as T,
-    [isDisabled, storedArgsRef]
+    [isDisabled, storedArgsRef, isSuccess, isLoading]
   );
+
+  const autoRevalidate = useCallback(() => {
+    if (isDisabled) return;
+    if (isLoading || !(cacheEnabled || storeEnabled)) return;
+    if (!revalidationEnabled || revalidateTime <= 0 || !isSuccess) return;
+    if (!fetchedDateTime) return;
+
+    const now = new Date().getTime();
+    const lastFetchedTime = new Date(fetchedDateTime).getTime();
+    const shouldRevalidate = now - lastFetchedTime >= revalidateTime;
+    if (shouldRevalidate) {
+      setIsTriggered(keyWithArgs, true);
+    }
+  }, [
+    cacheEnabled,
+    revalidationEnabled,
+    revalidateTime,
+    isSuccess,
+    fetchedDateTime,
+    isLoading,
+    isDisabled,
+  ]);
 
   useEffect(() => {
     setIsEnabled(keyWithArgs, enabled);
@@ -310,7 +324,7 @@ export const useAsync = <
   useEffect(() => {
     if (!autoFetch) return;
     if (isDisabled) return;
-    if (isFetched || isDisabled || isLoading) return;
+    if (isFetched || isLoading) return;
     if (isTriggered) return;
 
     setIsTriggered(keyWithArgs, true);
@@ -337,29 +351,10 @@ export const useAsync = <
 
   // Handle periodic revalidation if caching is enabled
   useEffect(() => {
-    if (isDisabled) return;
-    if (isLoading || !(cacheEnabled || storeEnabled)) return;
-    if (!revalidationEnabled || revalidateTime <= 0 || !isSuccess) return;
-    if (!fetchedDateTime) return;
-
-    const interval = setInterval(() => {
-      const now = new Date().getTime();
-      const lastFetchedTime = new Date(fetchedDateTime).getTime();
-      const shouldRevalidate = now - lastFetchedTime >= revalidateTime;
-      if (shouldRevalidate) {
-        setIsTriggered(keyWithArgs, true);
-      }
-    }, revalidateTime);
+    const interval = setInterval(autoRevalidate, revalidateTime);
 
     return () => clearInterval(interval);
-  }, [
-    cacheEnabled,
-    revalidationEnabled,
-    revalidateTime,
-    execute,
-    isSuccess,
-    fetchedDateTime,
-  ]);
+  }, [autoRevalidate, revalidateTime]);
 
   // Load data from session storage if storeEnabled is true
   useEffect(() => {
@@ -367,17 +362,17 @@ export const useAsync = <
     if (!storeEnabled) return;
     if (isInvalidated) return;
     if (isFetched) return;
-    if (isDisabled) return;
 
     const storedData = sessionStorage.getItem(keyWithArgs);
 
     if (storedData) {
       setData(keyWithArgs, JSON.parse(storedData));
     }
-  }, [storeEnabled, keyWithArgs]);
+  }, [storeEnabled, keyWithArgs, isFetched, isInvalidated, isDisabled]);
 
   // Handle invalidation if props are changed
   useEffect(() => {
+    if (!isInvalidatedProps) return;
     setIsInvalidated(keyWithArgs, isInvalidatedProps);
   }, [isInvalidatedProps]);
 
