@@ -4,6 +4,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { useCallback, useEffect, useRef } from "react";
+import { useShallow } from "zustand/react/shallow";
 import { useAsyncStateStore } from "./useAsyncStateStore";
 
 // Pending promises cache to prevent parallel requests when multiple components use the hook
@@ -24,7 +25,7 @@ type UseAsyncResultBase<T extends (...args: any[]) => Promise<any>> = {
 };
 
 // Options type for the hook, allowing customization of behavior.
-type UseAsyncOptions<T extends (...args: any[]) => Promise<any>> = {
+export type UseAsyncOptions<T extends (...args: any[]) => Promise<any>> = {
   retryLimit?: number; // The number of times the hook should retry the function on failure before giving up
   retryTime?: number; // Time in milliseconds for retrying the data
   cache?: boolean; // Cache the result of the function using zustand
@@ -130,24 +131,24 @@ export const useAsync = <
     setIsLoading,
     setError,
     setIsSuccess,
-    setIsTriggered,
     setData,
     setIsInvalidated,
     setIsEnabled,
     incrementRetryCount,
     resetRetryCount,
-  } = useAsyncStateStore((state) => ({
-    setIsFetched: state.setIsFetched,
-    setIsLoading: state.setIsLoading,
-    setError: state.setError,
-    setIsSuccess: state.setIsSuccess,
-    setIsTriggered: state.setIsTriggered,
-    setIsInvalidated: state.setIsInvalidated,
-    setIsEnabled: state.setIsEnabled,
-    setData: state.setData,
-    incrementRetryCount: state.incrementRetryCount,
-    resetRetryCount: state.resetRetryCount,
-  }));
+  } = useAsyncStateStore(
+    useShallow((state) => ({
+      setIsFetched: state.setIsFetched,
+      setIsLoading: state.setIsLoading,
+      setError: state.setError,
+      setIsSuccess: state.setIsSuccess,
+      setIsInvalidated: state.setIsInvalidated,
+      setIsEnabled: state.setIsEnabled,
+      setData: state.setData,
+      incrementRetryCount: state.incrementRetryCount,
+      resetRetryCount: state.resetRetryCount,
+    }))
+  );
 
   // Storing the last arguments used to call the async function
   const storedArgsRef = useRef<any[]>([]);
@@ -166,10 +167,9 @@ export const useAsync = <
     error,
     isSuccess,
     isInvalidated,
-    isTriggered,
     data,
     retryCount: errorCount,
-  } = useAsyncStateStore((state) => state.getStates(keyWithArgs));
+  } = useAsyncStateStore(useShallow((state) => state.getStates(keyWithArgs)));
 
   // Resolving optional parameters with default values
   const retryLimit = options?.retryLimit ?? DEFAULT_RETRY_LIMIT;
@@ -201,11 +201,17 @@ export const useAsync = <
       const promise = (async () => {
         setIsLoading(keyWithArgs, true);
         let response = null;
+        let errorResponse = null;
 
         await asyncFunction(...args)
           .then((result) => {
+            const isResultChanged =
+              JSON.stringify(result) !== JSON.stringify(data);
+
             response = result;
-            setData(keyWithArgs, result);
+            if (isResultChanged) {
+              setData(keyWithArgs, result);
+            }
             setIsSuccess(keyWithArgs, true);
             onSuccess?.(result);
             resetRetryCount(keyWithArgs);
@@ -216,14 +222,14 @@ export const useAsync = <
             }
 
             // Update other queries if necessary
-            if (updateQueries.length > 0) {
+            if (isResultChanged && updateQueries.length > 0) {
               updateQueries.forEach((key) => {
                 setData(key, result);
               });
             }
 
             // Invalidate other queries if necessary
-            if (invalidateQueries.length > 0) {
+            if (isResultChanged && invalidateQueries.length > 0) {
               invalidateQueries.forEach((key) => {
                 setIsInvalidated(key, true);
               });
@@ -236,6 +242,7 @@ export const useAsync = <
             setError(keyWithArgs, errorMessage);
             incrementRetryCount(keyWithArgs);
             onError?.(errorMessage);
+            errorResponse = error;
           })
           .finally(() => {
             setIsLoading(keyWithArgs, false);
@@ -245,6 +252,11 @@ export const useAsync = <
             // Remove the pending promise from the cache
             pendingPromises.delete(keyWithArgs);
           });
+
+        if (errorResponse) {
+          throw new Error(errorResponse);
+        }
+
         return response;
       })();
 
@@ -294,7 +306,7 @@ export const useAsync = <
     const lastFetchedTime = new Date(fetchedDateTime).getTime();
     const shouldRevalidate = now - lastFetchedTime >= revalidateTime;
     if (shouldRevalidate) {
-      setIsTriggered(keyWithArgs, true);
+      fetch(...storedArgsRef.current);
     }
   }, [
     cacheEnabled,
@@ -310,25 +322,14 @@ export const useAsync = <
     setIsEnabled(keyWithArgs, enabled);
   }, [enabled]);
 
-  // Fetching triggering system
-  useEffect(() => {
-    // Triggering system allows to fetch the data only once if the hook is mounted multiple times
-    if (!isTriggered) return;
-
-    setIsTriggered(keyWithArgs, false);
-
-    fetch(...storedArgsRef.current);
-  }, [isTriggered, storedArgsRef]);
-
   // Auto-fetch data on hook mount if autoFetch is true
   useEffect(() => {
     if (!autoFetch) return;
     if (isDisabled) return;
     if (isFetched || isLoading) return;
-    if (isTriggered) return;
 
-    setIsTriggered(keyWithArgs, true);
-  }, [autoFetch, isFetched, isTriggered, isDisabled, isLoading]);
+    fetch(...storedArgsRef.current);
+  }, [autoFetch, isFetched, isDisabled, isLoading]);
 
   // Handle retry based on conditions set in options
   useEffect(() => {
