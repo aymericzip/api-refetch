@@ -111,6 +111,7 @@ const fetchUserData = async (userId) => {
 
 const useUserDetails = useAsyncWrapper("userDetails", fetchUserData, {
   // Additional options for the useAsync hook
+  autoFetch: true,
 });
 ```
 

@@ -58,6 +58,9 @@ export type UseAsyncResult<
   T extends (...args: any[]) => Promise<any>
 > = UseAsyncResultBase<T> & Record<U, T>;
 
+const getKeyWithArgs = (key: string, args: any[]) =>
+  args.length > 0 ? `${key}/${JSON.stringify(args)}` : key;
+
 /**
  * A custom React hook that manages asynchronous operations, providing easy-to-use states and controls over fetching, caching, and retry mechanisms.
  * This hook abstracts away the complexity of handling loading, error, and success states for any asynchronous function.
@@ -84,7 +87,7 @@ export type UseAsyncResult<
  * @property {string[]} [invalidateQueries=[]] - Invalidate other queries when the data is updated.
  * @property {(data: Awaited<ReturnType<T>>) => void} [onSuccess] - Callback function that is called when the asynchronous function resolves successfully.
  * @property {(error: string) => void} [onError] - Callback function that is called when the asynchronous function rejects or encounters an error.
- * @property {Parameters<T>} [args=null] - Arguments to pass to the asynchronous function.
+ * @property {Parameters<T>} [args=[]] - Arguments to pass to the asynchronous function.
  *
  *
  * @example
@@ -142,7 +145,7 @@ export const useAsync = <
   const invalidateQueries = options?.invalidateQueries ?? [];
   const onSuccess = options?.onSuccess;
   const onError = options?.onError;
-  const args = options?.args ?? null;
+  const args = options?.args ?? [];
 
   // Using a custom hook to manage state specific to asynchronous operations
   const {
@@ -170,12 +173,10 @@ export const useAsync = <
   );
 
   // Storing the last arguments used to call the async function
-  const storedArgsRef = useRef<any>(args);
+  const storedArgsRef = useRef<any>(args ?? []);
 
   // Apply different key for different requests
-  const keyWithArgs = storedArgsRef.current.length
-    ? `${key}/${JSON.stringify(storedArgsRef.current)}`
-    : key;
+  const keyWithArgs = getKeyWithArgs(key, storedArgsRef.current);
 
   // Retrieving the current state of async operations using the same custom hook
   const {
@@ -188,7 +189,7 @@ export const useAsync = <
     isInvalidated,
     data,
     retryCount: errorCount,
-  } = useAsyncStateStore(useShallow((state) => state.getStates(keyWithArgs)));
+  } = useAsyncStateStore((state) => state.getStates(keyWithArgs));
 
   const isEnabled = isEnabledState || enabled;
   const isDisabled = !isEnabled;
@@ -196,6 +197,8 @@ export const useAsync = <
   // The core fetching function, designed to be called directly or automatically based on configuration
   const fetch: T = useCallback<T>(
     (async (...args) => {
+      const keyWithArgs = getKeyWithArgs(key, args);
+
       if (pendingPromises.has(keyWithArgs)) {
         // Return the existing pending promise
         return pendingPromises.get(keyWithArgs);
