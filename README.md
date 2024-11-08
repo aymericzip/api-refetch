@@ -92,6 +92,49 @@ const UserDetails = ({ userId }) => {
 };
 ```
 
+### Using the `useAsyncWrapper` Hook
+
+The `useAsyncWrapper` hook is a convenient way to define a custom hook that wraps an asynchronous function. It simplifies the process of declaring and using the `useAsync` hook in your components.
+
+Here's an example of how to use the `useAsyncWrapper` hook to define a custom hook for fetching user data:
+
+```javascript
+import { useAsyncWrapper } from "api-refetch";
+
+const fetchUserData = async (userId) => {
+  const response = await fetch(`/api/users/${userId}`);
+  if (!response.ok) {
+    throw new Error("Failed to fetch");
+  }
+  return await response.json();
+};
+
+const useUserDetails = useAsyncWrapper("userDetails", fetchUserData, {
+  // Additional options for the useAsync hook
+});
+```
+
+Now, you can use the `useUserDetails` hook in your components:
+
+```javascript
+import { useAsync } from "api-refetch";
+
+const UserDetails = ({ userId }) => {
+  const { isLoading, data, error, revalidate, setData } =
+    useAsyncWrapper(userId);
+
+  if (isLoading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error}</div>;
+  return (
+    <div>
+      <h1>{data.name}</h1>
+      <button onClick={() => revalidate()}>Refresh</button>
+      <button onClick={() => setData(null)}>Clear</button>
+    </div>
+  );
+};
+```
+
 ## Why Choose `api-refetch` Over React Query or SWR?
 
 While React Query and SWR are excellent tools for data fetching and caching in React applications, `api-refetch` offers unique advantages that may make it more suitable for certain use cases:
