@@ -180,14 +180,13 @@ export const fetcher = async <T>(
   // Make the HTTP request using fetch
   const response = await fetch(urlResult, formattedOptions);
 
-  // Check if the response status is OK (status code between 200-299)
   if (!response.ok) {
-    // Parse error details from the response
-    const errorBody = await response.json();
-    // Throw an error with the error message from the response
-    throw new Error(errorBody.error);
-  }
+    const result = await response.json();
 
-  // Return the parsed JSON response
-  return response.json();
+    console.error(result);
+
+    // You can customize the error message or include more details
+    throw new Error(JSON.stringify(result.error) ?? "An error occurred");
+  }
+  return await response.json();
 };

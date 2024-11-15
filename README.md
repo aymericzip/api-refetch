@@ -136,6 +136,60 @@ const UserDetails = ({ userId }) => {
 };
 ```
 
+## Merging hooks options
+
+You can merge hooks options to make your code more readable and maintainable. For example, you can create a custom hook to handle error logging and toast notifications, and another hook to enable authentication. Here's how you can do it:
+
+```typescript
+/**
+ *  Hook to handle error logging and toast notifications
+ */
+const useErrorHandling = <T extends UseAsyncOptions<any>>(options: T): T => {
+  const { toast } = useToast();
+
+  return {
+    ...options,
+    onError: (errorMessage) => {
+      const error = JSON.parse(errorMessage);
+      toast({
+        title: error.code ?? "Error",
+        description: error.message ?? "An error occurred",
+        variant: "error",
+      });
+      options.onError?.(errorMessage);
+    },
+  };
+};
+
+/**
+ * Hook to enable authentication
+ */
+const useAuthEnable = <T extends UseAsyncOptions<any>>(options: T): T => {
+  const { csrfToken, oAuth2AccessToken } = useAuth();
+
+  return {
+    ...options,
+    enable: Boolean(csrfToken || oAuth2AccessToken),
+  };
+};
+
+const useAppAsync = <
+  U extends string,
+  T extends (...args: any[]) => Promise<any>
+>(
+  key: U,
+  asyncFunction: T,
+  options?: UseAsyncOptions<T>
+) => {
+  // Enhance options using custom hooks
+  const optionsWithAuth = useAuthEnable(options ?? {});
+  const optionsWithErrorHandling = useErrorHandling(optionsWithAuth);
+
+  // Call the main useAsync hook with enhanced options
+  return useAsync(key, asyncFunction, optionsWithErrorHandling);
+};
+```
+
 ## Why Choose `api-refetch` Over React Query or SWR?
 
 While React Query and SWR are excellent tools for data fetching and caching in React applications, `api-refetch` offers unique advantages that may make it more suitable for certain use cases:

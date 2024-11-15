@@ -207,7 +207,6 @@ export const useAsync = <
       const promise = (async () => {
         setIsLoading(keyWithArgs, true);
         let response = null;
-        let errorResponse = null;
 
         await asyncFunction(...args)
           .then((result) => {
@@ -242,13 +241,10 @@ export const useAsync = <
             }
           })
           .catch((error) => {
-            const errorMessage = error.message ?? "An error occurred";
-
             setData(keyWithArgs, null);
-            setError(keyWithArgs, errorMessage);
+            setError(keyWithArgs, error.message);
             incrementRetryCount(keyWithArgs);
-            onError?.(errorMessage);
-            errorResponse = error;
+            onError?.(error.message);
           })
           .finally(() => {
             setIsLoading(keyWithArgs, false);
@@ -258,10 +254,6 @@ export const useAsync = <
             // Remove the pending promise from the cache
             pendingPromises.delete(keyWithArgs);
           });
-
-        if (errorResponse) {
-          throw new Error(errorResponse);
-        }
 
         return response;
       })();
