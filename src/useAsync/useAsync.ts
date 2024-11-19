@@ -145,7 +145,7 @@ export const useAsync = <
   const invalidateQueries = options?.invalidateQueries ?? [];
   const onSuccess = options?.onSuccess;
   const onError = options?.onError;
-  const args = getArgs(...(options?.args ?? []));
+  const args = getArgs(options?.args ?? []);
 
   // Using a custom hook to manage state specific to asynchronous operations
   const { setQueryState, setQueriesState, makeQueryInError } =
@@ -197,6 +197,7 @@ export const useAsync = <
             setQueryState(keyWithArgs, {
               data: result,
               retryCount: 0,
+              isLoading: false,
               isFetched: true,
               isSuccess: true,
               isInvalidated: false,
@@ -212,16 +213,16 @@ export const useAsync = <
               });
             }
 
-            // Store the result in session storage
-            if (storeEnabled) {
-              sessionStorage.setItem(keyWithArgs, JSON.stringify(result));
-            }
-
             // Update other queries if necessary
             if (updateQueries.length > 0) {
               setQueriesState(updateQueries, {
                 data: result,
               });
+            }
+
+            // Store the result in session storage
+            if (storeEnabled) {
+              sessionStorage.setItem(keyWithArgs, JSON.stringify(result));
             }
           })
           .catch((error) => {
@@ -229,12 +230,6 @@ export const useAsync = <
             onError?.(error.message);
           })
           .finally(() => {
-            setQueryState(keyWithArgs, {
-              isLoading: false,
-              isFetched: true,
-              isInvalidated: false,
-            });
-
             // Remove the pending promise from the cache
             pendingPromises.delete(keyWithArgs);
           });

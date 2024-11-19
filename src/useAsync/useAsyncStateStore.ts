@@ -101,6 +101,8 @@ export const useAsyncStateStore = create<AsyncState<unknown>>((set, get) => ({
           isFetched: true,
           isSuccess: false,
           retryCount: (state.states[key]?.retryCount ?? 0) + 1,
+          isLoading: false,
+          isInvalidated: false,
         },
       },
     })),
