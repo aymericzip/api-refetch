@@ -8,7 +8,7 @@ type States<T> = {
   error: string | null;
   isSuccess: boolean;
   data: T | null;
-  retryCount: number;
+  errorCount: number;
   isEnabled: boolean;
 };
 
@@ -37,7 +37,7 @@ const createDefaultStates = <T>(): States<T> => ({
   error: null,
   isSuccess: false,
   data: null,
-  retryCount: 0,
+  errorCount: 0,
   isEnabled: true,
 });
 
@@ -100,7 +100,7 @@ export const useAsyncStateStore = create<AsyncState<unknown>>((set, get) => ({
           error: error,
           isFetched: true,
           isSuccess: false,
-          retryCount: (state.states[key]?.retryCount ?? 0) + 1,
+          errorCount: (state.states[key]?.errorCount ?? 0) + 1,
           isLoading: false,
           isInvalidated: false,
         },
