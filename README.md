@@ -231,6 +231,30 @@ By choosing `api-refetch`, developers can leverage a straightforward, highly cus
 
 This section aims to clearly articulate the unique selling points of `api-refetch`, helping users to make an informed decision based on their specific requirements and the relative strengths of this library compared to other options in the market.
 
+## Understanding the Returned States
+
+When using the `useAsync` hook from `api-refetch`, it returns a variety of states and functions that help manage and respond to asynchronous operations seamlessly. Understanding these states is crucial for effectively handling data fetching, loading indicators, error handling, and more within your React components.
+
+### State Indicators
+
+Here’s a breakdown of each state returned by the `useAsync` hook:
+
+| **State**            | **Type**                                  | **Description**                                                                                                                                                                                               |
+| -------------------- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `isFetched`          | `boolean`                                 | Indicates whether the data has been successfully fetched at least once. This is useful to determine if the initial data load has occurred.                                                                    |
+| `isLoading`          | `boolean`                                 | Represents whether the data is currently being fetched. It is `true` when a fetch operation is in progress, whether it's an initial fetch or a revalidation.                                                  |
+| `isInvalidated`      | `boolean`                                 | Signals whether the current data is considered invalid and needs to be refetched. This can be triggered manually or by other operations that invalidate the existing data.                                    |
+| `isSuccess`          | `boolean`                                 | Denotes that the data was fetched successfully without any errors. This state is `true` when the last fetch operation completed successfully.                                                                 |
+| `isDisabled`         | `boolean`                                 | Indicates whether the hook is disabled (`true`) or enabled (`false`). A disabled hook does not perform any fetching operations.                                                                               |
+| `isWaitingData`      | `boolean`                                 | As `isLoading`, `true` when the hook is loading data for the first time and there is no data yet. But it remains `true` as long data is available.                                                            |
+| `isRevalidating`     | `boolean`                                 | `true` when the hook is revalidating already fetched data in the background to ensure it is up to date. This helps in maintaining fresh data without disrupting the user experience.                          |
+| `error`              | `string \| null`                          | Contains the error message if the fetch operation fails; otherwise, it is `null`. This is useful for displaying error messages to the user or triggering error-specific logic.                                |
+| `data`               | `any \| null`                             | Holds the fetched data once the operation is successful; otherwise, it is `null`. This is the primary data used within your components.                                                                       |
+| `errorCount`         | `number`                                  | Tracks the number of consecutive errors that have occurred during fetch attempts. This is useful for implementing retry logic or displaying persistent error messages after multiple failures.                |
+| `revalidate`         | `(...args: any[]) => Promise<any>`        | A function to manually trigger a revalidation (refetch) of the data. This allows you to refresh the data on demand, such as when a user performs a pull-to-refresh action.                                    |
+| `setData`            | `(data: any \| null) => void`             | A function to manually set or update the fetched data. This is useful for optimistic UI updates or when you need to modify the data without refetching it from the server.                                    |
+| `execute` as `[key]` | `[key]: (...args: any[]) => Promise<any>` | A dynamically named function based on the `key` parameter, allowing you to execute the fetch operation directly. For example, if the `key` is `'fetchUser'`, you can call `fetchUser()` to trigger the fetch. |
+
 ## Contributing
 
 Contributions are welcome! Please open an issue or submit a pull request with your suggestions or improvements.
