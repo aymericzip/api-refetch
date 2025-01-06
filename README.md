@@ -219,7 +219,7 @@ While React Query and SWR are excellent tools for data fetching and caching in R
 
 - **No Wrapper Store Provider Required**: Unlike other libraries that require you to wrap your application with a provider for state management, `api-refetch` operates without such requirements, making it easier to integrate with existing projects or for those seeking less complexity.
 
-- **Lightweight**: With a size of only 91.6 kB, `api-refetch` is significantly lighter than React Query (2.26 MB) and SWR (620 kB), making it an excellent choice for projects where payload size is a critical factor.
+- **Lightweight**: With a size of only 250 kB, `api-refetch` is significantly lighter than React Query (2.3 MB) and SWR (650 kB), making it an excellent choice for projects where payload size is a critical factor.
 
 - **Optimized for API Fetching**: This library is specifically optimized for API fetching scenarios within npm/react packages, providing just enough functionality to manage async operations effectively without over-engineering solutions.
 
