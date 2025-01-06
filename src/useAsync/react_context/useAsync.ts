@@ -4,8 +4,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { useCallback, useEffect, useMemo, useRef } from "react";
-import { useShallow } from "zustand/react/shallow";
-import { useAsyncStateStore } from "./useAsyncStateStore";
+import { useAsyncState } from "./useAsyncStateStore";
 
 // Pending promises cache to prevent parallel requests when multiple components use the hook
 const pendingPromises = new Map();
@@ -42,7 +41,7 @@ export type UseAsyncOptions<T extends (...args: any[]) => Promise<any>> = {
 };
 
 // Default values for the hook's options
-const DEFAULT_CACHE_ENABLED = false;
+const DEFAULT_CACHE_ENABLED = true;
 const DEFAULT_STORE_ENABLED = false;
 const DEFAULT_ENABLED = true;
 const DEFAULT_AUTO_FETCH = false;
@@ -148,14 +147,8 @@ export const useAsync = <
   const args = getArgs(options?.args ?? []);
 
   // Using a custom hook to manage state specific to asynchronous operations
-  const { setQueryState, setQueriesState, makeQueryInError } =
-    useAsyncStateStore(
-      useShallow((state) => ({
-        setQueryState: state.setQueryState,
-        setQueriesState: state.setQueriesState,
-        makeQueryInError: state.makeQueryInError,
-      }))
-    );
+  const { getStates, setQueryState, setQueriesState, makeQueryInError } =
+    useAsyncState();
 
   // Storing the last arguments used to call the async function
   const storedArgsRef = useRef<any[]>(args);
@@ -174,7 +167,7 @@ export const useAsync = <
     isInvalidated,
     data,
     retryCount: errorCount,
-  } = useAsyncStateStore(useShallow((state) => state.getStates(keyWithArgs)));
+  } = getStates(keyWithArgs);
 
   // The core fetching function, designed to be called directly or automatically based on configuration
   const fetch: T = useCallback<T>(
@@ -199,6 +192,7 @@ export const useAsync = <
               retryCount: 0,
               isLoading: false,
               isFetched: true,
+              fetchedDateTime: new Date(),
               isSuccess: true,
               isInvalidated: false,
               error: null,
@@ -317,7 +311,7 @@ export const useAsync = <
         isEnabled,
       });
     }
-  }, [enabled, keyWithArgs]);
+  }, [enabled, isEnabled, keyWithArgs]);
 
   // Auto-fetch data on hook mount if autoFetch is true
   useEffect(() => {
@@ -339,7 +333,7 @@ export const useAsync = <
 
   // Handle retry based on conditions set in options
   useEffect(() => {
-    const isRetryEnabled = errorCount > 0 && retryLimit > 0;
+    const isRetryEnabled = errorCount >= 0 && retryLimit > 0;
     const isRetryLimitReached = errorCount >= retryLimit;
     if (!isEnabled || !enabled) return;
     if (!(cacheEnabled || storeEnabled)) return;

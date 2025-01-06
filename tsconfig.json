@@ -14,6 +14,7 @@
     "skipDefaultLibCheck": false,
     "declarationMap": true,
     "declaration": true,
+    "jsx": "react-jsx",
     "types": ["node"],
     "allowImportingTsExtensions": true,
     "noEmit": true

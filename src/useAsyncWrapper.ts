@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-'use client';
+"use client";
 
-import { UseAsyncOptions, UseAsyncResult, useAsync } from './useAsync';
+import { UseAsyncOptions, UseAsyncResult, useAsync } from "./useAsync/zustand";
 
 /**
  * This hook allow the declaration of a custom hook that wraps an async function.

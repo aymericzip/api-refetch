@@ -51,6 +51,26 @@ const fetchUserData = async (userId) => {
 };
 ```
 
+### Add the provider in your application
+
+Add the `RefetchProvider` to your application:
+
+```javascript
+import { AsyncStateProvider } from "api-refetch";
+
+function App() {
+  return (
+    <AsyncStateProvider>
+      <UserDetails userId={1} />
+    </AsyncStateProvider>
+  );
+}
+```
+
+> If you don't want to use the provider, you can use the `useAsync` hook from the `api-refetch/zustand` package directly.
+> `useAsync` from `api-refetch/zustand` offers the same API as useAsync from api-refetch. The latter allows for a simpler setup. However, the store based on Zustand can sometimes be less optimized, as it may cause unwanted re-renders or, conversely, fail to re-render state changes.
+> Therefore, it is generally preferable to stay within React's context.
+
 ### Using the `useAsync` Hook
 
 Now, use the `useAsync` hook in your component:
@@ -66,7 +86,6 @@ const UserDetails = ({ userId }) => {
       enable: true, // enable the hook
       cache: true, // cache the API call result using zustand
       store: true, // store the API call result in the session storage
-      revalidateTime: 60 * 1000, // revalidate every 1 minute
       retryLimit: 3, // retry 3 times if the API call fails
       retryTime: 10 * 1000, // wait 10 seconds before retrying
       autoFetch: true, // auto fetch the API call when the component is mounted
