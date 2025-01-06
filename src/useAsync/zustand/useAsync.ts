@@ -31,7 +31,7 @@ export type UseAsyncOptions<T extends (...args: any[]) => Promise<any>> = {
   retryLimit?: number; // The number of times the hook should retry the function on failure before giving up
   retryTime?: number; // Time in milliseconds for retrying the data
   cache?: boolean; // Cache the result of the function using zustand
-  store?: boolean; // Store the result of the function in session storage
+  store?: boolean; // Store the result of the function in locale storage
   enable?: boolean; // Enable the hook
   autoFetch?: boolean; // Automatically fetch the data when the hook is mounted
   revalidation?: boolean; // Enable revalidation
@@ -206,9 +206,9 @@ export const useAsync = <
               });
             }
 
-            // Store the result in session storage
+            // Store the result in locale storage
             if (storeEnabled) {
-              sessionStorage.setItem(keyWithArgs, JSON.stringify(result));
+              localStorage.setItem(keyWithArgs, JSON.stringify(result));
             }
           })
           .catch((error) => {
@@ -302,9 +302,9 @@ export const useAsync = <
   }, [enabled, isEnabled, keyWithArgs]);
 
   /**
-   * HANDLE SESSION STORAGE LOADING
+   * HANDLE LOCAL STORAGE LOADING
    *
-   * If store is enabled, load data from session storage
+   * If store is enabled, load data from local storage
    */
   useEffect(() => {
     if (!isEnabled || !enabled) return; // Hook is disabled
