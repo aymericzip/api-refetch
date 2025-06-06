@@ -22,6 +22,7 @@ type UseAsyncResultBase<T extends (...args: any[]) => Promise<any>> = {
   errorCount: number;
   revalidate: T;
   setData: (data: Awaited<ReturnType<T> | null>) => void;
+  abort: () => void;
 };
 
 // Options type for the hook, allowing customization of behavior.
@@ -38,11 +39,12 @@ export type UseAsyncOptions<T extends (...args: any[]) => Promise<any>> = {
   updateQueries?: string[]; // Update other queries when the data is updated
   onSuccess?: (data: Awaited<ReturnType<T>>) => void; // Callback function that is called when the asynchronous function resolves successfully
   onError?: (error: string) => void; // Callback function that is called when the asynchronous function rejects or encounters an error
+  abort?: () => void; // Abort the request
   args?: Parameters<T>; // Arguments to pass to the asynchronous function
 };
 
 // Default values for the hook's options
-const DEFAULT_CACHE_ENABLED = true;
+const DEFAULT_CACHE_ENABLED = false;
 const DEFAULT_STORE_ENABLED = false;
 const DEFAULT_ENABLED = true;
 const DEFAULT_AUTO_FETCH = false;
@@ -228,10 +230,10 @@ export const useAsync = <
             }
           })
           .catch((error) => {
+            console.error({ error });
             const msg = error instanceof Error ? error.message : String(error);
 
             makeQueryInError(keyWithArgs, msg);
-
             onError?.(error.message);
           })
           .finally(() => {
@@ -247,7 +249,16 @@ export const useAsync = <
 
       return await promise;
     }) as T,
-    [asyncFunction, keyWithArgs, storeEnabled, cacheEnabled, onSuccess, onError]
+    [
+      asyncFunction,
+      keyWithArgs,
+      storeEnabled,
+      cacheEnabled,
+      onSuccess,
+      onError,
+      invalidateQueries,
+      updateQueries,
+    ]
   );
 
   /**
@@ -318,7 +329,7 @@ export const useAsync = <
         isEnabled,
       });
     }
-  }, [enabled, isEnabled, keyWithArgs]);
+  }, [enabled, isEnabled, keyWithArgs, setQueryState]);
 
   /**
    * HANDLE LOCAL STORAGE LOADING
@@ -350,6 +361,7 @@ export const useAsync = <
     isEnabled,
     enabled,
     data,
+    setQueryState,
   ]);
 
   /**
@@ -445,7 +457,24 @@ export const useAsync = <
         data,
       });
     },
-    [keyWithArgs]
+    [keyWithArgs, setQueryState]
+  );
+
+  const abort = useCallback(() => {
+    if (controllerRef.current) {
+      controllerRef.current.abort();
+    }
+  }, []);
+
+  // Cleanup effect to abort the controller on unmount
+  useEffect(
+    () => () => {
+      // Clean up the controller on unmount
+      if (controllerRef.current) {
+        controllerRef.current.abort();
+      }
+    },
+    []
   );
 
   // Memoization to prevent unnecessary re-renders
@@ -465,6 +494,7 @@ export const useAsync = <
       [key]: execute, // Name the execute function as the given key to avoid conflicts with other hooks (e.g. `const { fetchUser } = useAsync('fetchUser', () => fetchUserFunction());`)
       revalidate,
       setData: setDataMemo,
+      abort,
     }),
     [
       isFetched,
@@ -479,6 +509,7 @@ export const useAsync = <
       execute,
       revalidate,
       setDataMemo,
+      abort,
     ]
   );
 
